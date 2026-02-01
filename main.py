@@ -1,5 +1,4 @@
 import RPi.GPIO as GPIO
-import Adafruit_PCA9685
 import drive
 import measure_distance
 import time
@@ -15,32 +14,15 @@ GPIO.setup(t_list, GPIO.OUT, initial=GPIO.LOW)
 e_list = [26, 24, 37, 31, 38]
 GPIO.setup(e_list, GPIO.IN)
 
-pwm = Adafruit_PCA9685.PCA9685(address=0x40)
-pwm.set_pwm_freq(60)
-
-PWM_PARAM = drive.ReadPWMPARAM(pwm)
+# Motor
+m_list = [22, 18, 16, 11]
+GPIO.setup(m_list, GPIO.OUT)
 
 # minimum distance
 Cshort = 30
 short = 70
 
-# straight(Duty cycle) FORWARD_S = 90
-# curve(Duty cycle)
-FORWARD_C = 70
-# back(Duty cycle)
-REVERSE = -60
-
-# Steer(Duty cycle)
-LEFT = 90
-RIGHT = -90
-
-LEFT_COURSE_CORR = 50
-RIGHT_COURSE_CORR = 50
-
 d = np.zeros(6)
-
-drive.Accel(PWM_PARAM, pwm, time, 0)
-drive.Steer(PWM_PARAM, pwm, time, 0)
 
 print("Press any key to start!")
 input()
@@ -57,24 +39,23 @@ try:
 
         if FRdis >= Cshort:
             if LHdis <= short and RHdis >= short:
-                drive.Accel(PWM_PARAM, pwm, time, FORWARD_C)
-                drive.Steer(PWM_PARAM, pwm, time, RIGHT)
+                drive.forward(GPIO)
+                drive.right_turn(GPIO)
             elif LHdis > short and RHdis < short:
-                drive.Accel(PWM_PARAM, pwm, time, FORWARD_C)
-                drive.Steer(PWM_PARAM, pwm, time, LEFT)
+                drive.forward(GPIO)
+                drive.left_turn(GPIO)
             elif LHdis < short and RHdis < short:
                 if (LHdis - RHdis) > 10:
-                    drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-                    drive.Steer(PWM_PARAM, pwm, time, LEFT_COURSE_CORR)
+                    drive.forward(GPIO)
+                    drive.left_turn(GPIO)
                 if (RHdis - LHdis) > 10:
-                    drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-                    drive.Steer(PWM_PARAM, pwm, time, RIGHT_COURSE_CORR)
+                    drive.forward(GPIO)
+                    drive.right_turn(GPIO)
                 else:
-                    drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-                    drive.Steer(PWM_PARAM, pwm, time, RIGHT)
+                    drive.forward(GPIO)
+                    drive.right_turn(GPIO)
             else:
-                drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-                drive.Steer(PWM_PARAM, pwm, time, 0)
+                drive.forward(GPIO)
 #        elif short > LHdis or short > RHdis:
 #            if short > LHdis:
 #                drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
@@ -92,11 +73,8 @@ try:
         elif time.time() - start_time < 1:
             pass
         else:
-            drive.Accel(PWM_PARAM, pwm, time, REVERSE)
-            drive.Steer(PWM_PARAM, pwm, time, 0)
+            drive.backward(GPIO)
             time.sleep(0.1)
-            drive.Accel(PWM_PARAM, pwm, time, 0)
-            drive.Steer(PWM_PARAM, pwm, time, 0)
             GPIO.cleanup()
             d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis]])
             np.savetxt('./record_data.csv', d, fmt='%.3e')
@@ -104,6 +82,4 @@ try:
 
 except KeyboardInterrupt:
     np.savetxt('./record_data.csv', d, fmt='%.3e')
-    drive.Accel(PWM_PARAM, pwm, time, 0)
-    drive.Steer(PWM_PARAM, pwm, time, 0)
     GPIO.cleanup()

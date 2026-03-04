@@ -20,9 +20,14 @@ GPIO.setup(m_list, GPIO.OUT)
 
 # minimum distance
 Cshort = 30
-short = 70
+short = 50
 
-d = np.zeros(6)
+d = np.zeros(7)
+
+FORWARD = 1
+BACKWARD = 2
+LEFT_TURN = 3
+RIGHT_TURN = 4
 
 print("Press any key to start!")
 input()
@@ -33,51 +38,40 @@ try:
     while True:
         FRdis = measure_distance.Measure(GPIO, time, 15, 26)
         LHdis = measure_distance.Measure(GPIO, time, 13, 24)
-        RHdis = measure_distance.Measure(GPIO, time, 31, 31)
+        RHdis = measure_distance.Measure(GPIO, time, 32, 31)
         RLHdis = measure_distance.Measure(GPIO, time, 35, 37)
         RRHdis = measure_distance.Measure(GPIO, time, 36, 38)
+        print(f"{FRdis},{LHdis},{RHdis},{RLHdis},{RRHdis}")
 
-        if FRdis >= Cshort:
-            if LHdis <= short and RHdis >= short:
+        if FRdis >= Cshort or LHdis > 15 or RHdis > 15:
+            if LHdis <= short and RHdis >= LHdis:
                 drive.forward(GPIO)
                 drive.right_turn(GPIO)
-            elif LHdis > short and RHdis < short:
+                d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, RIGHT_TURN]])
+            elif LHdis > short and RHdis < LHdis:
                 drive.forward(GPIO)
                 drive.left_turn(GPIO)
+                d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, LEFT_TURN]])
             elif LHdis < short and RHdis < short:
                 if (LHdis - RHdis) > 10:
                     drive.forward(GPIO)
                     drive.left_turn(GPIO)
+                    d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, LEFT_TURN]])
                 if (RHdis - LHdis) > 10:
                     drive.forward(GPIO)
                     drive.right_turn(GPIO)
+                    d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, RIGHT_TURN]])
                 else:
                     drive.forward(GPIO)
-                    drive.right_turn(GPIO)
+                    d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, FORWARD]])
             else:
                 drive.forward(GPIO)
-#        elif short > LHdis or short > RHdis:
-#            if short > LHdis:
-#                drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-#                drive.Steer(PWM_PARAM, pwm, time, RIGHT_COURSE_CORR)
-#            else short > RHdis:
-#                drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-#                drive.Steer(PWM_PARAM, pwm, time, LEFT_COURSE_CORR)
-#        elif short > RLHdis or short > RRHdis:
-#            if short > RLHdis:
-#                drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-#                drive.Steer(PWM_PARAM, pwm, time, RIGHT_COURSE_CORR)
-#            else short > RRHdis:
-#                drive.Accel(PWM_PARAM, pwm, time, FORWARD_S)
-#                drive.Steer(PWM_PARAM, pwm, time, LEFT_COURSE_CORR)
+                d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, FORWARD]])
         elif time.time() - start_time < 1:
             pass
         else:
             drive.backward(GPIO)
-            time.sleep(0.1)
-            GPIO.cleanup()
-            d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis]])
-            np.savetxt('./record_data.csv', d, fmt='%.3e')
+            d = np.vstack([d, [time.time() - start_time, FRdis, RHdis, LHdis, RRHdis, RLHdis, BACKWARD]])
         time.sleep(0.05)
 
 except KeyboardInterrupt:

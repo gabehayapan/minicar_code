@@ -1,0 +1,2 @@
+The condition if LHdir < short seems to prevent the car from going to the shortcut path.
+From the data from sensors on the right side, I need to change handling.

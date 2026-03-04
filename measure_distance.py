@@ -1,6 +1,6 @@
 def Measure(GPIO, time, trig, echo):
     dis = 0
-    n = 3
+    n = 1
     for i in range(n):
         sigoff = 0
         sigon = 0
@@ -17,8 +17,8 @@ def Measure(GPIO, time, trig, echo):
             if sigon - sigoff > 0.02:
                 break
         d = (sigon - sigoff) * 34000 / 2
-        if d > 200:
-            dis += 200 / n
+        if d > 300:
+            dis += 300 / n
         else:
             dis += d / n
     return dis
